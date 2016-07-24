@@ -23,7 +23,8 @@ int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsigned *r2, unsigned *r3, unsigned *funct, unsigned *offset, unsigned *jsec)
 {
 	int* binaryInstruction = convertDecimalToBinary(instruction);
-	// printIntArray(binaryInstruction, 32);
+	printIntArray(binaryInstruction, 32);
+
 	*op = convertInstructionToComponent(binaryInstruction, 31, 26);
 	*r1 = convertInstructionToComponent(binaryInstruction, 25, 21);
 	*r2 = convertInstructionToComponent(binaryInstruction, 20, 16);
@@ -59,15 +60,17 @@ int* convertDecimalToBinary(unsigned decimalInstruction) {
 	return binaryInstruction;
 }
 
-int* convertInstructionToMachineCode(unsigned *instruction) {
-	// First create an array of machine code for 
-	int* machineInstruction = malloc(sizeof(int) * 32);
-	return machineInstruction;
-}
-
 /* instruction decode */
 int instruction_decode(unsigned op,struct_controls *controls)
 {
+	// If it is R, set all the values except ALUOp
+
+	// If it is I, depending on op code, change it.
+
+	// If it is 2, it is J code
+
+
+	// Check the halt condition
 	return 0;
 }
 
@@ -87,6 +90,7 @@ void sign_extend(unsigned offset,unsigned *extended_value)
 /* ALU operations */
 int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigned funct,char ALUOp,char ALUSrc,unsigned *ALUresult,char *Zero)
 {
+	
 	return 0;
 }
 
@@ -126,5 +130,12 @@ void printIntArray(int* array, int length) {
  * start is the start of taking bits (inclusive) and end is end of taking the bit (inclusive)
  */
 unsigned convertInstructionToComponent(int* binaryInstruciton, int start, int end) {
-
+	unsigned num = 0;
+	int i;
+	// Don't know what representation is good for this.
+	for (int i = end; i <= start; i++) {
+		num += binaryInstruciton[i] << i;
+		// Or num += binaryInstruciton[i] << (i - end)?;
+	}
+	return num;
 }

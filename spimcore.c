@@ -114,6 +114,13 @@ void Step(void)
 	{
 		/* partition the instruction */
 		instruction_partition(instruction,&op,&r1,&r2,&r3,&funct,&offset,&jsec);
+		printf("op: %d\n", op);
+		printf("op: %d\n", r1);
+		printf("op: %d\n", r2);
+		printf("op: %d\n", r3);
+		printf("op: %d\n", funct);
+		printf("op: %d\n", offset);
+		printf("op: %d\n", jsec);
 
 		/* instruction decode */
 		Halt = instruction_decode(op,&controls);
