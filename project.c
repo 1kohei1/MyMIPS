@@ -63,6 +63,8 @@ int* convertDecimalToBinary(unsigned decimalInstruction) {
 /* instruction decode */
 int instruction_decode(unsigned op,struct_controls *controls)
 {
+	// Look up spreadsheet here: https://docs.google.com/spreadsheets/d/1MlP-kBKAyWNguGBK5eeJzzck4xoViNzvHRbdCSQm5YU/edit#gid=0
+
 	// If it is R, set all the values except ALUOp
 
 	// If it is I, depending on op code, change it.
@@ -77,20 +79,53 @@ int instruction_decode(unsigned op,struct_controls *controls)
 /* Read Register */
 void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigned *data2)
 {
-
+	*data1 = Reg[r1];
+	*data2 = Reg[r2];
 }
 
 
 /* Sign Extend */
 void sign_extend(unsigned offset,unsigned *extended_value)
 {
-
+	*extended_value = offset << 4;
 }
 
 /* ALU operations */
 int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigned funct,char ALUOp,char ALUSrc,unsigned *ALUresult,char *Zero)
 {
-	
+	// This is R type instruction
+	if (ALUOp == '7') {
+		char ALUControl = '';
+		// add (funct: 0)
+		if (funct == 0) {
+			ALUControl = '0';
+		}
+		// subtract (funct: 38)
+		else if (funct == 38) {
+			ALUControl = '1';
+		}
+		// and (funct: 3)
+		else if (funct == 3) {
+			ALUControl = '4';
+		}
+		// or (funct: 25)
+		else if (funct == 25) {
+			ALUControl = '5';
+		}
+		// set on less than (funct: 32)
+		else if (funct == 32) {
+			ALUControl = '2';
+		}
+		// set less than unsigned (funct: 33)
+		else if (funct == 33) {
+			ALUControl = '3'; // I'm not sure here.
+		}
+		ALU(data1,data2,char ALUControl,unsigned *ALUresult,char *Zero);
+	} 
+	else if (ALUOp == '') {
+
+	}
+	// If ALUOp is R, 
 	return 0;
 }
 
@@ -110,7 +145,7 @@ void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,
 /* PC update */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
-
+	*PC += 4;
 }
 
 /*************** Helper Functions ***************/
@@ -134,7 +169,7 @@ unsigned convertInstructionToComponent(int* binaryInstruciton, int start, int en
 	int i;
 	// Don't know what representation is good for this.
 	for (int i = end; i <= start; i++) {
-		num += binaryInstruciton[i] << i;
+		num += binaryInstruciton[i] << (i - end);
 		// Or num += binaryInstruciton[i] << (i - end)?;
 	}
 	return num;
