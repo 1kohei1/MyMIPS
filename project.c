@@ -38,7 +38,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 		*ALUresult = A | B;
 	}
 	else if (ALUControl == '6') {
-		*ALUresult = B << 4;
+		*ALUresult = B << 16;
 	}
 	else if (ALUControl == '7') {
 		*ALUresult = ~A;
@@ -50,6 +50,10 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 /* instruction fetch */
 int instruction_fetch(unsigned PC,unsigned *Mem,unsigned *instruction)
 {
+	printf("PC: %x\n", PC);
+	if (PC % 4 != 0) {
+		return 1;
+	}
 	*instruction = Mem[PC / 4];
 
 	// Check if it is invalid instruction or not. Do it later.
@@ -91,7 +95,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->MemWrite = '0';
 		controls->ALUSrc = '0';
 		controls->RegWrite = '1';
-		printf("Run R type instruction\n");
+		return 0;
 	}
 
 	// This is J
@@ -106,6 +110,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '0';
 		controls->RegWrite = '0';
 		printf("Run J type instruction\n");
+		return 0;
 	}
 
 	// This is add immediate
@@ -120,6 +125,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '1';
 		controls->RegWrite = '1';
 		printf("Run add immediate\n");
+		return 0;
 	}
 
 	// This is load word
@@ -134,6 +140,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '1';
 		controls->RegWrite = '1';
 		printf("Run load word\n");
+		return 0;
 	}
 
 	// This is store word
@@ -148,6 +155,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '1';
 		controls->RegWrite = '0';
 		printf("Run store word\n");
+		return 0;
 	}
 
 	// This is load upper immediate
@@ -162,6 +170,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '1';
 		controls->RegWrite = '1';
 		printf("Run load upper immediate\n");
+		return 0;
 	}
 
 	// This is branch on equal
@@ -176,6 +185,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '0';
 		controls->RegWrite = '0';
 		printf("Run branch on equal\n");
+		return 0;
 	}
 
 	// This is set less than immediate
@@ -190,6 +200,7 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '1';
 		controls->RegWrite = '1';
 		printf("Run set less than immediate\n");
+		return 0;
 	}
 
 	// This is set less than immediate unsigned
@@ -204,10 +215,10 @@ int instruction_decode(unsigned op,struct_controls *controls)
 		controls->ALUSrc = '1';
 		controls->RegWrite = '1';
 		printf("Run less than immediate unsigned\n");
+		return 0;
 	}
 
-	// Check the halt condition
-	return 0;
+	return 1;
 }
 
 /* Read Register */
@@ -245,29 +256,35 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
 	// This is R type instruction
 	if (ALUOp == '7') {
 		switch (funct) {
-			case 0:
-				// set on less than 2
-				ALUControl = '0';
-				break;
-			case 38:
-				// subtract
-				ALUControl = '1';
-				break;
-			case 3:
-				// and
-				ALUControl = '4';
-				break;
-			case 25:
-				// or
-				ALUControl = '5';
-				break;
 			case 32:
 				// add
 				ALUControl = '0';
+				printf("Run add\n");
 				break;
-			case 33:
+			case 34:
+				// subtract
+				ALUControl = '1';
+				printf("Run subtract\n");
+				break;
+			case 36:
+				// and
+				ALUControl = '4';
+				printf("Run and\n");
+				break;
+			case 37:
+				// or
+				ALUControl = '5';
+				printf("Run or\n");
+				break;
+			case 42:
+				// set on less than
+				ALUControl = '2';
+				printf("Run set on less than\n");
+				break;
+			case 43:
 				// set less than unsigned
 				ALUControl = '3';
+				printf("Run set less than unsigned\n");
 				break;
 		}
 	} 
@@ -292,24 +309,37 @@ int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigne
 		ALUControl = '3';
 	}
 
-	ALU(data1, data2, ALUControl, ALUresult, Zero);
-
-	// Check halt condition
-	return 0;
+	if (ALUControl == ' ') {
+		printf("ALUControl: %c\n", ALUControl);
+		return 1;
+	} else {
+		ALU(data1, data2, ALUControl, ALUresult, Zero);
+		return 0;
+	}
 }
 
 /* Read / Write Memory */
 int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsigned *memdata,unsigned *Mem)
 {
+
 	// Write to the memory
 	if (MemWrite == '1') {
-		printf("Write %u to Mem[%d]\n", data2, ALUresult);
-		Mem[ALUresult] = data2;
+		if (ALUresult % 4 != 0) {
+			return 1;
+		}
+		printf("Mem[%u] = %u\n", ALUresult, data2);
+
+		Mem[ALUresult >> 2] = data2;
 	}
+	// Read from the memory
 	if (MemRead == '1') {
+		if (ALUresult % 4 != 0) {
+			return 1;
+		}
 		printf("Read Mem[%u]\n", ALUresult);
-		*memdata = Mem[ALUresult];
+		*memdata = Mem[ALUresult >> 2];
 	}
+
 	return 0;
 }
 
@@ -318,7 +348,7 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
 void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,char RegWrite,char RegDst,char MemtoReg,unsigned *Reg)
 {
 	if (RegWrite == '1') {
-		unsigned writeData = MemtoReg == 1 ? memdata : ALUresult;
+		unsigned writeData = MemtoReg == '1' ? memdata : ALUresult;
 		unsigned writeRegister = RegDst == '0' ? r2 : r3;
 		printf("Write %u to r%u\n", writeData, writeRegister);
 		Reg[writeRegister] = writeData;
@@ -332,12 +362,12 @@ void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char 
 //This is using pointer arithmatic , please go to P[0] + 4 <-- go to the 4th element in memory 2
 	*PC += 4; 
 
-	if(Zero == 1 && Branch == 1) {
+	if(Zero == '1' && Branch == '1') {
 		*PC += (extended_value << 2);
 	}
 
-	if(Jump == 1) { //instruction for jump is to concat [31:28] , [25:0] jsec ]
-		*PC = ((*PC | 0b11110000000000000000000000000000) + (jsec << 2));
+	if(Jump == '1') { //instruction for jump is to concat [31:28] , [25:0] jsec ]
+		*PC = ((*PC & 0b11110000000000000000000000000000) + (jsec << 2));
 	}
 }
 /*************** Helper Functions ***************/

@@ -123,7 +123,7 @@ void Step(void)
 		printf("r3: %u\n", r3);
 		printf("funct: %u\n", funct);
 		printf("offset: %u\n", offset);
-		printf("jsec: %u\n", jsec);
+		printf("jsec: %u\n\n", jsec);
 
 		/* instruction decode */
 		Halt = instruction_decode(op,&controls);
@@ -139,16 +139,23 @@ void Step(void)
 		sign_extend(offset,&extended_value);
 		printf("extended_value (u): %u\n", extended_value);
 
+		printf("Halt: %d\n", Halt);
 		/* ALU */
 		Halt = ALU_operations(data1,data2,extended_value,funct,controls.ALUOp,controls.ALUSrc,&ALUresult,&Zero);
 		printf("ALUresult: %u, Zero: %u\n", ALUresult, Zero);
+		printf("Halt: %d\n", Halt);
 	}
 
 	if(!Halt)
 	{
 		/* read/write memory */
 		Halt = rw_memory(ALUresult,data2,controls.MemWrite,controls.MemRead,&memdata,Mem);
+		if (controls.MemRead == '1') {
+			printf("Memory value: %u\n", memdata);
+		}
 	}
+	printf("Halt: %d\n", Halt);
+
 
 	if(!Halt)
 	{
@@ -219,6 +226,9 @@ void DumpMemHex(int from, int to)
 		mt = Mem[ma = from];
 		for (i = from + 1; i <= to; i++)
 		{
+			if (i == 65532) {
+				printf("came here");
+			}
 			if (i == to || Mem[i] != mt)
 			{
 				if (i == ma + 1) {
