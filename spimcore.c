@@ -106,6 +106,9 @@ void DisplayControlSignals(void)
 
 void Step(void)
 {
+	// Test ALU
+	// ALU(4278240195, 2130756547, ALUresult, &ALUresult, &Zero);
+
 	/* fetch instruction from memory */
 	Halt = instruction_fetch(PC,Mem,&instruction);
 	printf("instruction(decimal): %d, instruction(hex): %x\n", instruction, instruction);
@@ -114,13 +117,13 @@ void Step(void)
 	{
 		/* partition the instruction */
 		instruction_partition(instruction,&op,&r1,&r2,&r3,&funct,&offset,&jsec);
-		printf("op: %d\n", op);
-		printf("r1: %d\n", r1);
-		printf("r2: %d\n", r2);
-		printf("r3: %d\n", r3);
-		printf("funct: %d\n", funct);
-		printf("offset: %d\n", offset);
-		printf("jsec: %d\n", jsec);
+		printf("op: %u\n", op);
+		printf("r1: %u\n", r1);
+		printf("r2: %u\n", r2);
+		printf("r3: %u\n", r3);
+		printf("funct: %u\n", funct);
+		printf("offset: %u\n", offset);
+		printf("jsec: %u\n", jsec);
 
 		/* instruction decode */
 		Halt = instruction_decode(op,&controls);
@@ -130,12 +133,15 @@ void Step(void)
 	{
 		/* read_register */
 		read_register(r1,r2,Reg,&data1,&data2);
+		printf("data1: %u, data2: %u\n", data1, data2);
 
 		/* sign_extend */
 		sign_extend(offset,&extended_value);
+		printf("extended_value (u): %u\n", extended_value);
 
 		/* ALU */
 		Halt = ALU_operations(data1,data2,extended_value,funct,controls.ALUOp,controls.ALUSrc,&ALUresult,&Zero);
+		printf("ALUresult: %u, Zero: %u\n", ALUresult, Zero);
 	}
 
 	if(!Halt)
@@ -218,7 +224,6 @@ void DumpMemHex(int from, int to)
 				if (i == ma + 1) {
 					fprintf(stdout, "%s %05x        %08x\n",
 						Redir, ma*4, mt);
-					printf("ma1: %d, ma*4: %d\n", ma, ma*4);
 				}
 				else {
 					fprintf(stdout, "%s %05x-%05x  %08x\n",

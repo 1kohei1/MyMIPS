@@ -1,12 +1,50 @@
 #include "spimcore.h"
+
 int* convertDecimalToBinary(unsigned decimalInstruction);
 void printIntArray(int* array, int length);
-unsigned convertInstructionToComponent(int* binaryInstruciton, int start, int end);
+unsigned convertBinaryByRange(int* binaryInstruciton, int start, int end);
 
 /* ALU */
 void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 {
-	printf("%c", ALUControl);
+	// int* binaryA = convertDecimalToBinary(A);
+	// printIntArray(binaryA, 32);
+	// int decimalA = convertBinaryIn2sComplement(binaryA);
+	// printf("%d\n", decimalA);
+	// free(binaryA);
+
+	// int* binaryB = convertDecimalToBinary(B);
+	// printIntArray(binaryA, 32);
+	// int decimalB = convertBinaryIn2sComplement(binaryB);
+	// printf("%d\n", decimalB);
+	// free(binaryB);
+
+	if (ALUControl == '0') {
+		*ALUresult = A + B;
+	}
+	else if (ALUControl == '1') {
+		*ALUresult = A - B;
+	}
+	else if (ALUControl == '2') {
+		*ALUresult = (int) A < (int) B ? 1 : 0;
+	}
+	else if (ALUControl == '3') {
+		*ALUresult = A < B ? 1 : 0;
+	}
+	else if (ALUControl == '4') {
+		*ALUresult = A & B;
+	}
+	else if (ALUControl == '5') {
+		*ALUresult = A | B;
+	}
+	else if (ALUControl == '6') {
+		*ALUresult = B << 4;
+	}
+	else if (ALUControl == '7') {
+		*ALUresult = ~A;
+	}
+
+	*Zero = ALUresult == 0 ? 1 : 0;
 }
 
 /* instruction fetch */
@@ -25,39 +63,16 @@ void instruction_partition(unsigned instruction, unsigned *op, unsigned *r1,unsi
 	int* binaryInstruction = convertDecimalToBinary(instruction);
 	printIntArray(binaryInstruction, 32);
 
-	*op = convertInstructionToComponent(binaryInstruction, 31, 26);
-	*r1 = convertInstructionToComponent(binaryInstruction, 25, 21);
-	*r2 = convertInstructionToComponent(binaryInstruction, 20, 16);
-	*r3 = convertInstructionToComponent(binaryInstruction, 15, 11);
-	*funct = convertInstructionToComponent(binaryInstruction, 5, 0);
-	*offset = convertInstructionToComponent(binaryInstruction, 15, 0);
-	*jsec = convertInstructionToComponent(binaryInstruction, 25, 0);
-}
+	*op = convertBinaryByRange(binaryInstruction, 31, 26);
+	*r1 = convertBinaryByRange(binaryInstruction, 25, 21);
+	*r2 = convertBinaryByRange(binaryInstruction, 20, 16);
+	*r3 = convertBinaryByRange(binaryInstruction, 15, 11);
+	*funct = convertBinaryByRange(binaryInstruction, 5, 0);
+	*offset = convertBinaryByRange(binaryInstruction, 15, 0);
+	*jsec = convertBinaryByRange(binaryInstruction, 25, 0);
 
-unsigned op,	// instruction [31-26]
-	r1,	// instruction [25-21]
-	r2,	// instruction [20-16]
-	r3,	// instruction [15-11]
-	funct,	// instruction [5-0]
-	offset,	// instruction [15-0]
-	jsec;	// instruction [25-0]
-
-int* convertDecimalToBinary(unsigned decimalInstruction) {
-	int* binaryInstruction = malloc(sizeof(int) * 32);
-	// Fill binaryInstruction by 0.
-	int i;
-	for (i = 0; i < 32; i++) {
-		binaryInstruction[i] = 0;
-	}
-
-	int index = 0;
-	while (decimalInstruction > 0) {
-		binaryInstruction[index] = decimalInstruction % 2;
-		decimalInstruction /= 2;
-		index++;
-	}
-
-	return binaryInstruction;
+	// Free memory
+	free(binaryInstruction);
 }
 
 /* instruction decode */
@@ -66,11 +81,130 @@ int instruction_decode(unsigned op,struct_controls *controls)
 	// Look up spreadsheet here: https://docs.google.com/spreadsheets/d/1MlP-kBKAyWNguGBK5eeJzzck4xoViNzvHRbdCSQm5YU/edit#gid=0
 
 	// If it is R, set all the values except ALUOp
+	if (op == 0) {
+		controls->RegDst = '1';
+		controls->Jump = '0';
+		controls->Branch = '0';
+		controls->MemRead = '0';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '7';
+		controls->MemWrite = '0';
+		controls->ALUSrc = '0';
+		controls->RegWrite = '1';
+		printf("Run R type instruction\n");
+	}
 
-	// If it is I, depending on op code, change it.
+	// This is J
+	if (op == 2) {
+		controls->RegDst = '0';
+		controls->Jump = '1';
+		controls->Branch = '0';
+		controls->MemRead = '0';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '0';
+		controls->MemWrite = '0';
+		controls->ALUSrc = '0';
+		controls->RegWrite = '0';
+		printf("Run J type instruction\n");
+	}
 
-	// If it is 2, it is J code
+	// This is add immediate
+	if (op == 8) {
+		controls->RegDst = '0';
+		controls->Jump = '0';
+		controls->Branch = '0';
+		controls->MemRead = '0';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '0';
+		controls->MemWrite = '0';
+		controls->ALUSrc = '1';
+		controls->RegWrite = '1';
+		printf("Run add immediate\n");
+	}
 
+	// This is load word
+	if (op == 35) {
+		controls->RegDst = '0';
+		controls->Jump = '0';
+		controls->Branch = '0';
+		controls->MemRead = '1';
+		controls->MemtoReg = '1';
+		controls->ALUOp = '0';
+		controls->MemWrite = '0';
+		controls->ALUSrc = '1';
+		controls->RegWrite = '1';
+		printf("Run load word\n");
+	}
+
+	// This is store word
+	if (op == 43) {
+		controls->RegDst = '0';
+		controls->Jump = '0';
+		controls->Branch = '0';
+		controls->MemRead = '0';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '0';
+		controls->MemWrite = '1';
+		controls->ALUSrc = '1';
+		controls->RegWrite = '0';
+		printf("Run store word\n");
+	}
+
+	// This is load upper immediate
+	if (op == 15) {
+		controls->RegDst = '0';
+		controls->Jump = '0';
+		controls->Branch = '0';
+		controls->MemRead = '0';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '6';
+		controls->MemWrite = '0';
+		controls->ALUSrc = '1';
+		controls->RegWrite = '1';
+		printf("Run load upper immediate\n");
+	}
+
+	// This is branch on equal
+	if (op == 4) {
+		controls->RegDst = '0';
+		controls->Jump = '0';
+		controls->Branch = '1';
+		controls->MemRead = '0';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '1';
+		controls->MemWrite = '0';
+		controls->ALUSrc = '0';
+		controls->RegWrite = '0';
+		printf("Run branch on equal\n");
+	}
+
+	// This is set less than immediate
+	if (op == 10) {
+		controls->RegDst = '0';
+		controls->Jump = '0';
+		controls->Branch = '0';
+		controls->MemRead = '2';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '2';
+		controls->MemWrite = '2';
+		controls->ALUSrc = '1';
+		controls->RegWrite = '1';
+		printf("Run set less than immediate\n");
+	}
+
+	// This is set less than immediate unsigned
+	if (op == 11) {
+		controls->RegDst = '0';
+		controls->Jump = '0';
+		controls->Branch = '0';
+		controls->MemRead = '0';
+		controls->MemtoReg = '0';
+		controls->ALUOp = '3';
+		controls->MemWrite = '0';
+		controls->ALUSrc = '1';
+		controls->RegWrite = '1';
+		printf("Run less than immediate unsigned\n");
+	}
 
 	// Check the halt condition
 	return 0;
@@ -87,51 +221,95 @@ void read_register(unsigned r1,unsigned r2,unsigned *Reg,unsigned *data1,unsigne
 /* Sign Extend */
 void sign_extend(unsigned offset,unsigned *extended_value)
 {
-	*extended_value = offset << 4;
+	int* binary = convertDecimalToBinary(offset);
+	// printIntArray(binary, 32);
+	if (binary[15] == 1) {
+		int i;
+		for (i = 16; i < 32; i++) {
+			binary[i] = 1;
+		}
+	}
+	// printIntArray(binary, 32);
+	// How come could extended_value be unsigned? Doesn't it be signed?
+	*extended_value = convertBinaryByRange(binary, 31, 0);
+
+	free(binary);
 }
 
 /* ALU operations */
 int ALU_operations(unsigned data1,unsigned data2,unsigned extended_value,unsigned funct,char ALUOp,char ALUSrc,unsigned *ALUresult,char *Zero)
 {
+	char ALUControl = ' ';
+	data2 = ALUSrc == '0' ? data2 : extended_value;
+
 	// This is R type instruction
 	if (ALUOp == '7') {
-		char ALUControl = '';
-		// add (funct: 0)
-		if (funct == 0) {
-			ALUControl = '0';
+		switch (funct) {
+			case 0:
+				// set on less than 2
+				ALUControl = '0';
+				break;
+			case 38:
+				// subtract
+				ALUControl = '1';
+				break;
+			case 3:
+				// and
+				ALUControl = '4';
+				break;
+			case 25:
+				// or
+				ALUControl = '5';
+				break;
+			case 32:
+				// add
+				ALUControl = '0';
+				break;
+			case 33:
+				// set less than unsigned
+				ALUControl = '3';
+				break;
 		}
-		// subtract (funct: 38)
-		else if (funct == 38) {
-			ALUControl = '1';
-		}
-		// and (funct: 3)
-		else if (funct == 3) {
-			ALUControl = '4';
-		}
-		// or (funct: 25)
-		else if (funct == 25) {
-			ALUControl = '5';
-		}
-		// set on less than (funct: 32)
-		else if (funct == 32) {
-			ALUControl = '2';
-		}
-		// set less than unsigned (funct: 33)
-		else if (funct == 33) {
-			ALUControl = '3'; // I'm not sure here.
-		}
-		ALU(data1,data2,char ALUControl,unsigned *ALUresult,char *Zero);
 	} 
-	else if (ALUOp == '') {
-
+	// add immediate, load word, store word 
+	else if (ALUOp == '0') {
+		ALUControl = '0';
 	}
-	// If ALUOp is R, 
+	// load upper immediate
+	else if (ALUOp == '6') {
+		ALUControl = '6';
+	}
+	// branch on equal
+	else if (ALUOp == '1') {
+		ALUControl = '1';
+	}
+	// Set less than immediate
+	else if (ALUOp == '2') {
+		ALUControl = '2';
+	}
+	// Set less than immediate unsigned
+	else if (ALUOp == '3') {
+		ALUControl = '3';
+	}
+
+	ALU(data1, data2, ALUControl, ALUresult, Zero);
+
+	// Check halt condition
 	return 0;
 }
 
 /* Read / Write Memory */
 int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsigned *memdata,unsigned *Mem)
 {
+	// Write to the memory
+	if (MemWrite == '1') {
+		printf("Write %u to Mem[%d]\n", data2, ALUresult);
+		Mem[ALUresult] = data2;
+	}
+	if (MemRead == '1') {
+		printf("Read Mem[%u]\n", ALUresult);
+		*memdata = Mem[ALUresult];
+	}
 	return 0;
 }
 
@@ -139,16 +317,70 @@ int rw_memory(unsigned ALUresult,unsigned data2,char MemWrite,char MemRead,unsig
 /* Write Register */
 void write_register(unsigned r2,unsigned r3,unsigned memdata,unsigned ALUresult,char RegWrite,char RegDst,char MemtoReg,unsigned *Reg)
 {
-
+	if (RegWrite == '1') {
+		unsigned writeData = MemtoReg == 1 ? memdata : ALUresult;
+		unsigned writeRegister = RegDst == '0' ? r2 : r3;
+		printf("Write %u to r%u\n", writeData, writeRegister);
+		Reg[writeRegister] = writeData;
+	}
 }
 
 /* PC update */
 void PC_update(unsigned jsec,unsigned extended_value,char Branch,char Jump,char Zero,unsigned *PC)
 {
-	*PC += 4;
+//mem is stored in byte blocks 
+//This is using pointer arithmatic , please go to P[0] + 4 <-- go to the 4th element in memory 2
+	*PC += 4; 
+
+	if(Zero == 1 && Branch == 1) {
+		*PC += (extended_value << 2);
+	}
+
+	if(Jump == 1) { //instruction for jump is to concat [31:28] , [25:0] jsec ]
+		*PC = ((*PC | 0b11110000000000000000000000000000) + (jsec << 2));
+	}
+}
+/*************** Helper Functions ***************/
+
+int* convertDecimalToBinary(unsigned decimalInstruction) {
+	int* binaryInstruction = malloc(sizeof(int) * 32);
+	// Fill binaryInstruction by 0.
+	int i;
+	for (i = 0; i < 32; i++) {
+		binaryInstruction[i] = 0;
+	}
+
+	int index = 0;
+	while (decimalInstruction > 0 && index < 32) {
+		binaryInstruction[index] = decimalInstruction % 2;
+		decimalInstruction /= 2;
+		index++;
+	}
+
+	return binaryInstruction;
 }
 
-/*************** Helper Functions ***************/
+/**
+ * Take 32 bits int array and convert it to decimal by 2's complement
+ */
+int convertBinaryIn2sComplement(int* num) {
+	int decimal = convertBinaryByRange(num, 31, 0);
+
+	// If it is negative number, flip them.
+	if (num[31] == 1) {
+		// We can convert num into decimal and do ~num, but that might cause unexpected error, so flip each element one by one here.
+		int i;
+		for (i = 0; i < 32; i++) {
+			num[i] = num[i] == 0 ? 1 : 0;
+		}
+		decimal = convertBinaryByRange(num, 31, 0);
+		decimal++;
+		decimal *= -1;
+	}
+	printIntArray(num, 32);
+
+	return decimal;
+}
 
 void printIntArray(int* array, int length) {
 	while (--length >= 0) {
@@ -161,10 +393,10 @@ void printIntArray(int* array, int length) {
 }
 
 /**
- * Takes binary instruction and convert to instruction component.
- * start is the start of taking bits (inclusive) and end is end of taking the bit (inclusive)
+ * Takes binary instruction and convert to decimal by range. This is unsigned conversion.
+ * start is the start of taking bits (inclusive) and end is end of taking bits (inclusive)
  */
-unsigned convertInstructionToComponent(int* binaryInstruciton, int start, int end) {
+unsigned convertBinaryByRange(int* binaryInstruciton, int start, int end) {
 	unsigned num = 0;
 	int i;
 	// Don't know what representation is good for this.
