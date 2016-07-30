@@ -44,7 +44,7 @@ void ALU(unsigned A,unsigned B,char ALUControl,unsigned *ALUresult,char *Zero)
 		*ALUresult = ~A;
 	}
 
-	*Zero = ALUresult == 0 ? 1 : 0;
+	*Zero = *ALUresult == 0 ? '1' : '0';
 }
 
 /* instruction fetch */
